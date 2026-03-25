@@ -3,13 +3,21 @@ pipeline:
   identifier: student_registry_ci
   projectIdentifier: studentregistry
   orgIdentifier: default
+
   stages:
     - stage:
         name: Build and Push
         identifier: build_and_push
         type: CI
+
         spec:
           cloneCodebase: true
+          infrastructure:
+            type: VM
+            spec:
+              os: Linux
+              poolName: ci-delegate 
+
           execution:
             steps:
               - step:
@@ -21,9 +29,10 @@ pipeline:
                     command: |
                       sonar-scanner \
                         -Dsonar.projectKey=student-registry \
-                        -Dsonar.sources=./app \
-                        -Dsonar.host.url=https://sonarcloud.io \
+                        -Dsonar.sources=. \
+                        -Dsonar.host.url=http://<YOUR-SONAR-IP>:9000 \
                         -Dsonar.login=<+secrets.getValue("sonar_token")>
+
               - step:
                   name: Build and Push Docker Image
                   identifier: docker_build_push
@@ -34,6 +43,7 @@ pipeline:
                     tags:
                       - latest
                       - <+pipeline.executionId>
+
           codebase:
             connectorRef: github-connector
             repoName: student-registry
