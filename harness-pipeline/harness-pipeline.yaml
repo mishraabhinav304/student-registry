@@ -1,0 +1,43 @@
+pipeline:
+  name: student-registry-ci
+  identifier: student_registry_ci
+  projectIdentifier: studentregistry
+  orgIdentifier: default
+  stages:
+    - stage:
+        name: Build and Push
+        identifier: build_and_push
+        type: CI
+        spec:
+          cloneCodebase: true
+          execution:
+            steps:
+              - step:
+                  name: SonarQube Scan
+                  identifier: sonar_scan
+                  type: Run
+                  spec:
+                    image: sonarsource/sonar-scanner-cli:latest
+                    command: |
+                      sonar-scanner \
+                        -Dsonar.projectKey=student-registry \
+                        -Dsonar.sources=./app \
+                        -Dsonar.host.url=https://sonarcloud.io \
+                        -Dsonar.login=<+secrets.getValue("sonar_token")>
+              - step:
+                  name: Build and Push Docker Image
+                  identifier: docker_build_push
+                  type: BuildAndPushDockerRegistry
+                  spec:
+                    connectorRef: dockerhub_connector
+                    repo: <+secrets.getValue("dockerhub_username")>/student-registry
+                    tags:
+                      - latest
+                      - <+pipeline.executionId>
+          codebase:
+            connectorRef: github-connector
+            repoName: student-registry
+            build:
+              type: branch
+              spec:
+                branch: main
